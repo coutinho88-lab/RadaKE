@@ -1,5 +1,5 @@
-import SocialFeed from "@/components/feed/SocialFeed";
+import ChatsRoute from "@/components/chat/ChatsScreen";
 
-export default function FeedRoute() {
-  return <SocialFeed />;
+export default function DashboardRoute() {
+  return <ChatsRoute />;
 }

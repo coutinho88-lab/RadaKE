@@ -11,6 +11,10 @@ export default function RootLayout() {
           name="chat/[id]"
           options={{ headerShown: true, title: "Conversation" }}
         />
+        <Stack.Screen
+          name="profile"
+          options={{ headerShown: true, title: "Profile" }}
+        />
       </Stack>
     </>
   );

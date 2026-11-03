@@ -1,18 +1,38 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { Pressable, StyleSheet } from "react-native";
 
 const tabIcons = {
-  index: "home-outline",
-  chats: "chatbubbles-outline",
+  index: "chatbubbles-outline",
+  feed: "home-outline",
   discover: "compass-outline",
-  profile: "person-circle-outline",
 } as const;
+
+function ProfileButton() {
+  const router = useRouter();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Open profile"
+      onPress={() => router.push("/profile")}
+      style={styles.profileButton}
+    >
+      <Ionicons name="person-circle-outline" size={30} color="#5B43C2" />
+    </Pressable>
+  );
+}
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={({ route }) => ({
-        headerShown: false,
+        headerShown: true,
+        headerTitleStyle: { color: "#211D2B", fontSize: 17, fontWeight: "800" },
+        headerStyle: { backgroundColor: "#FAF9FF" },
+        headerShadowVisible: false,
+        headerRight: () => <ProfileButton />,
         tabBarPosition: "bottom",
         tabBarActiveTintColor: "#6C4CF1",
         tabBarInactiveTintColor: "#8B8B98",
@@ -27,10 +47,13 @@ export default function TabLayout() {
         ),
       })}
     >
-      <Tabs.Screen name="index" options={{ title: "Feed" }} />
-      <Tabs.Screen name="chats" options={{ title: "Chats" }} />
+      <Tabs.Screen name="index" options={{ title: "Chats" }} />
+      <Tabs.Screen name="feed" options={{ title: "Feed" }} />
       <Tabs.Screen name="discover" options={{ title: "Discover" }} />
-      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  profileButton: { marginRight: 14, padding: 3 },
+});

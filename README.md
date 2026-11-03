@@ -1,6 +1,6 @@
 # InstaChat
 
-An Expo Router starter for a shared iOS, Android, and web application. The starter includes a tab shell, a sample social feed, a conversation list, and a real-time-ready chat screen. Sample feed and chat items are local preview data; they are not saved or sent.
+An Expo Router starter for a shared iOS, Android, and web application. The dashboard opens to Chats, with a profile shortcut in the top-right and three sections: Chats, Feed, and Discover. Sample content and interactions are local preview data; they are not saved, sent, or server-authorized.
 
 ## Stack
 
@@ -23,7 +23,13 @@ An Expo Router starter for a shared iOS, Android, and web application. The start
 4. Open the Expo QR code on a device, or press `i`, `a`, or `w` in the Expo terminal for iOS simulator, Android emulator, or web. The web build uses the same Expo Router screens and includes web page metadata in `app/+html.tsx`.
 5. To type-check, run `npm run typecheck`.
 
-The Supabase client is only created when both environment variables are present. Until then, the UI runs in preview mode. Add Supabase Auth screens and database access before treating any preview content as production data.
+The Supabase client is only created when both environment variables are present. Until then, the UI runs in preview mode. Likes, comments, and reposts in the current UI are local state and will reset on reload. Discover searches the bundled sample topics and news only.
+
+## Publish to GitHub Pages
+
+The `Deploy Expo web app to GitHub Pages` workflow builds the Expo web app and deploys it to `https://coutinho88-lab.github.io/RadaKE/` whenever a commit is pushed to `main`. The Expo web base URL is configured for this repository path, and the workflow adds a `404.html` fallback so client-side routes can load when opened directly. Repository Pages should use **GitHub Actions** as its deployment source.
+
+Rada is the private-post format shown with a blue avatar ribbon in Chats. The sample UI hides Rada from rows that are not marked as saved contacts, but this client-side preview check is **not access control**. Before using real private posts, enforce authorization on the server: store the author's saved-contact relationship in Postgres, enable Row Level Security on Rada posts, and allow a viewer to read a post only if they are the author or are in that author's saved contacts. Keep Rada media in a private Storage bucket and issue signed URLs only after authorization. Never rely on a client-supplied contact flag to protect private content.
 
 ## Project layout
 
@@ -31,15 +37,16 @@ The Supabase client is only created when both environment variables are present.
 app/
   _layout.tsx            Root stack and global status bar
   (tabs)/
-    _layout.tsx          Feed, Chats, Discover, and Profile navigation
-    index.tsx            Social feed and stories
-    chats.tsx            Conversation list
-    discover.tsx         Reels/discover placeholder
-    profile.tsx          Profile placeholder
+    _layout.tsx          Chats, Feed, and Discover navigation + profile shortcut
+    index.tsx            Chats dashboard (opening section)
+    feed.tsx             Public post feed
+    discover.tsx           Search, trending topics, and news preview
+  profile.tsx            Profile screen opened from the dashboard header
   chat/[id].tsx          Conversation route
 components/
+  chat/ChatsScreen.tsx   Chat list, blue Rada rings, and private-post viewer
   chat/ChatScreen.tsx    Message timeline and composer
-  feed/SocialFeed.tsx    Stories and post cards
+  feed/SocialFeed.tsx    Public posts, likes, comments, and reposts
 lib/
   supabase.ts            Supabase client and configuration
   preview-data.ts        Clearly local-only sample content
