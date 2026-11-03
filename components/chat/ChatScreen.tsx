@@ -10,16 +10,22 @@ import {
   View,
 } from "react-native";
 import { previewChats, previewMessages } from "@/lib/preview-data";
+import { usePreviewStore } from "@/lib/preview-store";
 
 type Props = { conversationId: string };
 
 export default function ChatScreen({ conversationId }: Props) {
   const chat = previewChats.find((item) => item.id === conversationId);
+  const { privateMessages } = usePreviewStore();
   const [draft, setDraft] = useState("");
   const [sentMessages, setSentMessages] = useState<string[]>([]);
   const messages = useMemo(
-    () => [...(previewMessages[conversationId] ?? []), ...sentMessages],
-    [conversationId, sentMessages],
+    () => [
+      ...(previewMessages[conversationId] ?? []),
+      ...(privateMessages[conversationId] ?? []),
+      ...sentMessages,
+    ],
+    [conversationId, privateMessages, sentMessages],
   );
 
   function sendMessage() {
@@ -60,7 +66,10 @@ export default function ChatScreen({ conversationId }: Props) {
         keyExtractor={(_, index) => `${conversationId}-${index}`}
         contentContainerStyle={styles.timeline}
         renderItem={({ item, index }) => {
-          const own = index >= (previewMessages[conversationId]?.length ?? 0);
+          const own =
+            index >=
+            (previewMessages[conversationId]?.length ?? 0) +
+              (privateMessages[conversationId]?.length ?? 0);
           return (
             <View style={[styles.bubble, own ? styles.ownBubble : styles.theirBubble]}>
               <Text style={[styles.bubbleText, own && styles.ownText]}>{item}</Text>

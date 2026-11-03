@@ -1,4 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as ImageManipulator from "expo-image-manipulator";
+import * as ImagePicker from "expo-image-picker";
+import { usePreviewStore } from "@/lib/preview-store";
 import { useState } from "react";
 import {
   FlatList,
@@ -17,14 +20,16 @@ import {
   previewComments,
   previewPosts,
 } from "@/lib/preview-data";
+import type { UserPublicPost } from "@/lib/preview-store";
 
-type Post = (typeof previewPosts)[number];
+type Post = (typeof previewPosts)[number] | UserPublicPost;
 type FeedModal =
   | { post: Post; mode: "comments" | "repost" | "quote" }
   | null;
 type Quote = { id: string; post: Post; text: string };
 
 export default function SocialFeed() {
+  const store = usePreviewStore();
   const [likedPosts, setLikedPosts] = useState<string[]>([]);
   const [repostedPosts, setRepostedPosts] = useState<string[]>([]);
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -34,6 +39,61 @@ export default function SocialFeed() {
   const [modal, setModal] = useState<FeedModal>(null);
   const [commentDraft, setCommentDraft] = useState("");
   const [quoteDraft, setQuoteDraft] = useState("");
+  const [postCaption, setPostCaption] = useState("");
+  const [postImage, setPostImage] = useState<string | undefined>();
+  const [postError, setPostError] = useState<string | null>(null);
+  const posts = [...store.publicPosts, ...previewPosts];
+
+  async function choosePostImage() {
+    setPostError(null);
+    try {
+      if (Platform.OS !== "web") {
+        const permission =
+          await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+          setPostError("Allow photo-library access to attach an image.");
+          return;
+        }
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        quality: 0.72,
+      });
+      if (result.canceled) return;
+      const selected = result.assets[0];
+      if (!selected) {
+        setPostError("This image could not be loaded. Please choose another photo.");
+        return;
+      }
+      const resized = await ImageManipulator.manipulateAsync(
+        selected.uri,
+        [{ resize: { width: 1000 } }],
+        { compress: 0.62, format: ImageManipulator.SaveFormat.JPEG, base64: true },
+      );
+      const imageData = resized.base64;
+      if (!imageData) {
+        setPostError("This image could not be loaded. Please choose another photo.");
+        return;
+      }
+      setPostImage(`data:image/jpeg;base64,${imageData}`);
+    } catch (reason) {
+      setPostError(
+        reason instanceof Error
+          ? `Could not choose an image: ${reason.message}`
+          : "Could not choose an image.",
+      );
+    }
+  }
+
+  function publishPost() {
+    const caption = postCaption.trim();
+    if ((!caption && !postImage) || !store.ready) return;
+    store.publishPublicPost(postImage, caption);
+    setPostCaption("");
+    setPostImage(undefined);
+    setPostError(null);
+  }
 
   function toggleLike(postId: string) {
     setLikedPosts((current) =>
@@ -78,9 +138,67 @@ export default function SocialFeed() {
 
   return (
     <View style={styles.screen}>
-      <Text style={styles.preview}>PUBLIC FEED · SAMPLE POSTS</Text>
+      <View style={styles.createPost}>
+        <Text style={styles.createTitle}>Share a public post</Text>
+        <TextInput
+          accessibilityLabel="Write a public post"
+          value={postCaption}
+          onChangeText={setPostCaption}
+          maxLength={500}
+          multiline
+          placeholder="What would you like to share?"
+          style={styles.createInput}
+        />
+        {postImage && (
+          <View style={styles.selectedImageWrap}>
+            <Image source={{ uri: postImage }} style={styles.selectedImage} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Remove selected image"
+              onPress={() => setPostImage(undefined)}
+              style={styles.removeImage}
+            >
+              <Ionicons name="close" size={18} color="#FFFFFF" />
+            </Pressable>
+          </View>
+        )}
+        {postError && (
+          <Text accessibilityRole="alert" style={styles.postError}>
+            {postError}
+          </Text>
+        )}
+        {store.storageError && (
+          <Text accessibilityRole="alert" style={styles.postError}>
+            {store.storageError}
+          </Text>
+        )}
+        <View style={styles.createActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Add a photo to public post"
+            onPress={choosePostImage}
+            style={styles.attachButton}
+          >
+            <Ionicons name="image-outline" size={19} color="#5B43C2" />
+            <Text style={styles.attachLabel}>Photo</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            disabled={!store.ready || (!postCaption.trim() && !postImage)}
+            onPress={publishPost}
+            style={[
+              styles.publishButton,
+              (!store.ready || (!postCaption.trim() && !postImage)) &&
+                styles.disabled,
+            ]}
+          >
+            <Text style={styles.publishText}>Post publicly</Text>
+          </Pressable>
+        </View>
+      </View>
+      <Text style={styles.preview}>PUBLIC FEED · VISIBLE TO EVERYONE</Text>
       <FlatList
-        data={previewPosts}
+        data={posts}
         keyExtractor={(post) => post.id}
         contentContainerStyle={styles.posts}
         ListHeaderComponent={
@@ -119,7 +237,13 @@ export default function SocialFeed() {
                 </View>
                 <Ionicons name="ellipsis-horizontal" size={20} color="#514D5B" />
               </View>
-              <Image source={{ uri: item.image }} style={styles.postImage} />
+              {item.image ? (
+                <Image source={{ uri: item.image }} style={styles.postImage} />
+              ) : (
+                <View style={styles.textPost}>
+                  <Text style={styles.textPostContent}>{item.caption}</Text>
+                </View>
+              )}
               <View style={styles.postActions}>
                 <Pressable
                   accessibilityRole="button"
@@ -318,6 +442,62 @@ const styles = StyleSheet.create({
     maxWidth: 620,
     width: "100%",
   },
+  createPost: {
+    backgroundColor: "#FFFFFF",
+    borderBottomColor: "#EEEAF5",
+    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 13,
+    paddingBottom: 12,
+  },
+  createTitle: { color: "#211D2B", fontSize: 14, fontWeight: "800" },
+  createInput: {
+    backgroundColor: "#F8F7FB",
+    borderRadius: 12,
+    color: "#211D2B",
+    marginTop: 9,
+    minHeight: 55,
+    padding: 11,
+    textAlignVertical: "top",
+  },
+  selectedImageWrap: { marginTop: 9, position: "relative" },
+  selectedImage: { aspectRatio: 1.7, borderRadius: 10, width: "100%" },
+  removeImage: {
+    alignItems: "center",
+    backgroundColor: "rgba(33, 29, 43, 0.72)",
+    borderRadius: 16,
+    height: 30,
+    justifyContent: "center",
+    position: "absolute",
+    right: 8,
+    top: 8,
+    width: 30,
+  },
+  postError: {
+    backgroundColor: "#FFF0F0",
+    borderRadius: 8,
+    color: "#A51D2D",
+    fontSize: 12,
+    marginTop: 8,
+    padding: 9,
+  },
+  createActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 9,
+  },
+  attachButton: { alignItems: "center", flexDirection: "row", gap: 6, paddingVertical: 6 },
+  attachLabel: { color: "#5B43C2", fontSize: 12, fontWeight: "700" },
+  publishButton: {
+    alignItems: "center",
+    backgroundColor: "#6C4CF1",
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  publishText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },
+  disabled: { opacity: 0.45 },
   preview: {
     alignSelf: "flex-start",
     backgroundColor: "#F0EDFA",
@@ -371,6 +551,13 @@ const styles = StyleSheet.create({
   author: { color: "#211D2B", fontSize: 13, fontWeight: "700" },
   location: { color: "#777386", fontSize: 10, marginTop: 2 },
   postImage: { aspectRatio: 1, backgroundColor: "#E9E3FF", width: "100%" },
+  textPost: {
+    backgroundColor: "#F0EDFA",
+    justifyContent: "center",
+    minHeight: 150,
+    padding: 20,
+  },
+  textPostContent: { color: "#211D2B", fontSize: 18, fontWeight: "600", lineHeight: 26 },
   postActions: { alignItems: "center", flexDirection: "row", gap: 14, paddingHorizontal: 14, paddingTop: 8 },
   actionButton: { alignItems: "center", justifyContent: "center", minHeight: 34, minWidth: 30 },
   bookmark: { marginLeft: "auto" },
@@ -420,5 +607,4 @@ const styles = StyleSheet.create({
   quoteInput: { backgroundColor: "#F8F7FB", borderRadius: 12, color: "#211D2B", minHeight: 100, padding: 12, textAlignVertical: "top" },
   quoteSubmit: { alignItems: "center", backgroundColor: "#6C4CF1", borderRadius: 22, marginTop: 16, paddingVertical: 12 },
   quoteSubmitText: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
-  disabled: { opacity: 0.45 },
 });
