@@ -1,0 +1,17 @@
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+
+export default function RootLayout() {
+  return (
+    <>
+      <StatusBar style="dark" />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="chat/[id]"
+          options={{ headerShown: true, title: "Conversation" }}
+        />
+      </Stack>
+    </>
+  );
+}
