@@ -23,7 +23,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export default function ChatsScreen() {
   const router = useRouter();
   const store = usePreviewStore();
-  const [radaCaption, setRadaCaption] = useState("");
   const [activeRadaId, setActiveRadaId] = useState<string | null>(null);
   const [replyDraft, setReplyDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -69,11 +68,7 @@ export default function ChatsScreen() {
         setError("This image could not be loaded. Please choose another photo.");
         return;
       }
-      store.publishRada(
-        `data:image/jpeg;base64,${imageData}`,
-        radaCaption.trim(),
-      );
-      setRadaCaption("");
+      store.publishRada(`data:image/jpeg;base64,${imageData}`, "");
     } catch (reason) {
       setError(
         reason instanceof Error
@@ -159,18 +154,6 @@ export default function ChatsScreen() {
                 </Text>
               </Pressable>
             )}
-            <View style={styles.captionComposer}>
-              <Ionicons name="lock-closed-outline" size={17} color="#5B43C2" />
-              <TextInput
-                accessibilityLabel="Private Rada text"
-                value={radaCaption}
-                onChangeText={setRadaCaption}
-                maxLength={280}
-                placeholder="Share a private update…"
-                style={styles.captionInput}
-              />
-              <Text style={styles.characterCount}>{radaCaption.length}/280</Text>
-            </View>
             <Text style={styles.eyebrow}>CHATS · SAVED CONTACTS</Text>
             {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
             {store.storageError && (
@@ -447,20 +430,6 @@ const styles = StyleSheet.create({
   ownRadaInfo: { alignSelf: "flex-start", marginTop: 5 },
   ownRadaLabel: { color: "#514D5B", fontSize: 11, fontWeight: "700" },
   expiryText: { color: "#9692A0", fontSize: 10, marginTop: 2 },
-  captionComposer: {
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderColor: "#E8E4EF",
-    borderRadius: 13,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 12,
-    minHeight: 46,
-    paddingHorizontal: 12,
-  },
-  captionInput: { color: "#211D2B", flex: 1, fontSize: 13 },
-  characterCount: { color: "#9692A0", fontSize: 10 },
   eyebrow: {
     alignSelf: "flex-start",
     backgroundColor: "#F0EDFA",

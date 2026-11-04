@@ -35,6 +35,9 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Export Expo web app
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://rqwydzodpovffptvaeue.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_owcne4-BjYxGST_gyJctwg_DsxRjkuj
         run: npx expo export --platform web
 
       - name: Add GitHub Pages SPA fallback

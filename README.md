@@ -23,7 +23,7 @@ An Expo Router starter for a shared iOS, Android, and web application. The dashb
 4. Open the Expo QR code on a device, or press `i`, `a`, or `w` in the Expo terminal for iOS simulator, Android emulator, or web. The web build uses the same Expo Router screens and includes web page metadata in `app/+html.tsx`.
 5. To type-check, run `npm run typecheck`.
 
-The Supabase client is only created when both environment variables are present. Until then, the UI runs in preview mode. Your Radas, public posts, and Rada replies are saved in local device/browser storage; Radas expire after 24 hours, while their chat replies remain in the inbox. Feed likes, comments, and reposts are currently preview interactions and reset on reload. Discover searches the bundled sample topics and news only.
+The Supabase client is only created when both environment variables are present. The app requires Supabase configuration and the profile migration for sign-in and signup; without them it shows setup guidance instead of opening the dashboard. Accounts and profiles are stored in Supabase. Radas, public posts, and Rada replies remain local preview data saved in device/browser storage; Radas expire after 24 hours, while their chat replies remain in the inbox. Feed likes, comments, and reposts are currently preview interactions and reset on reload. Discover searches the bundled sample topics and news only.
 
 ## Publish to GitHub Pages
 
@@ -55,10 +55,14 @@ lib/
 
 ## Backend implementation path
 
-1. Enable Supabase email/password or phone OTP in Authentication. Use Supabase Auth sessions, and create a `profiles` row keyed by `auth.users.id` for avatar, bio, and status.
-2. Add Postgres tables for `conversations`, `conversation_members`, `messages`, `posts`, `post_likes`, `comments`, `follows`, and `stories`. Enable RLS on every table; allow reads/writes only for authenticated members/followers as appropriate.
-3. Subscribe to authorized conversation/message changes through Supabase Realtime. Store read receipts and typing state separately; do not treat client-side ticks or presence as authoritative.
-4. Store media in private Supabase Storage buckets with policies and signed URLs. Use an Edge Function plus APNs/FCM credentials for push delivery.
-5. For true end-to-end encryption, design and audit a dedicated cryptographic protocol. Supabase transport security and database RLS are not end-to-end encryption.
+1. Enable email/password sign-in in Supabase Authentication and choose whether email confirmation is required.
+2. Apply [`supabase/migrations/20261104000000_auth_profiles.sql`](./supabase/migrations/20261104000000_auth_profiles.sql) in the Supabase SQL Editor (or with the Supabase CLI). It creates public and private profile tables, saved contacts, signup profile creation, and row-level security policies.
+3. Keep the Supabase URL and anon key in `.env` as described above. The app requires these values and the migration before accounts can be created.
+4. Public usernames, email addresses, bios, and about text are readable by anyone. Phone numbers, dates of birth, and sex are readable only by the profile owner and accounts the owner has saved as contacts. The profile screen manages these fields and saved contacts. Passwords are handled only by Supabase Auth and are never stored in profile rows.
+5. Supabase Auth may require users to confirm their email before their first sign-in. Email changes may also require confirmation, depending on the project’s Authentication settings.
+6. Add Postgres tables for `conversations`, `conversation_members`, `messages`, `posts`, `post_likes`, `comments`, `follows`, and `stories`. Enable RLS on every table; allow reads/writes only for authenticated members/followers as appropriate.
+7. Subscribe to authorized conversation/message changes through Supabase Realtime. Store read receipts and typing state separately; do not treat client-side ticks or presence as authoritative.
+8. Store media in private Supabase Storage buckets with policies and signed URLs. Use an Edge Function plus APNs/FCM credentials for push delivery.
+9. For true end-to-end encryption, design and audit a dedicated cryptographic protocol. Supabase transport security and database RLS are not end-to-end encryption.
 
 Do not ship push provider secrets or Supabase service-role credentials in the client. Configure production redirect URLs, RLS policies, storage policies, and platform notification credentials before release.
