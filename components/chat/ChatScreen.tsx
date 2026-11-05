@@ -41,7 +41,7 @@ export default function ChatScreen({ conversationId }: Props) {
 
   if (!chat) {
     return (
-      <View style={styles.empty}>
+      <View style={[styles.empty, dark && styles.darkScreen]}>
         <Text style={[styles.emptyText, dark && styles.darkText]}>Conversation not found.</Text>
       </View>
     );
@@ -54,7 +54,7 @@ export default function ChatScreen({ conversationId }: Props) {
       keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0}
     >
       <View style={[styles.previewNotice, dark && styles.darkNotice]}>
-        <Text style={styles.previewText}>PREVIEW · Messages stay on this device</Text>
+        <Text style={[styles.previewText, dark && styles.darkSecondaryText]}>PREVIEW · Messages stay on this device</Text>
       </View>
       <View style={[styles.chatHeader, dark && styles.darkHeader]}>
         <View style={styles.avatar}>
@@ -62,13 +62,13 @@ export default function ChatScreen({ conversationId }: Props) {
         </View>
         <View>
           <Text style={[styles.chatName, dark && styles.darkText]}>{chat.name}</Text>
-          <Text style={styles.presence}>last seen recently</Text>
+          <Text style={[styles.presence, dark && styles.darkSecondaryText]}>last seen recently</Text>
         </View>
       </View>
       <FlatList
         data={messages}
         keyExtractor={(_, index) => `${conversationId}-${index}`}
-        contentContainerStyle={styles.timeline}
+        contentContainerStyle={[styles.timeline, dark && styles.darkScreen]}
         renderItem={({ item, index }) => {
           const own =
             index >=
@@ -134,6 +134,7 @@ const styles = StyleSheet.create({
   darkNotice: { backgroundColor: "#2A2632" },
   darkHeader: { backgroundColor: "#211E29", borderBottomColor: "#393442" },
   darkText: { color: "#F4F1F8" },
+  darkSecondaryText: { color: "#C2BDCA" },
   darkInput: { backgroundColor: "#302C38", color: "#F4F1F8" },
   previewNotice: { alignItems: "center", backgroundColor: "#F0EDFA", paddingVertical: 7 },
   previewText: { color: "#777386", fontSize: 10, fontWeight: "700", letterSpacing: 0.5 },

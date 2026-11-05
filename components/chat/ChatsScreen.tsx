@@ -17,12 +17,15 @@ import {
 } from "react-native";
 import { previewChats } from "@/lib/preview-data";
 import { RadaPost, usePreviewStore } from "@/lib/preview-store";
+import { useAppSettings } from "@/lib/app-settings";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export default function ChatsScreen() {
   const router = useRouter();
   const store = usePreviewStore();
+  const { settings } = useAppSettings();
+  const dark = settings.theme === "dark";
   const [activeRadaId, setActiveRadaId] = useState<string | null>(null);
   const [replyDraft, setReplyDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -91,17 +94,17 @@ export default function ChatsScreen() {
   }
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, dark && styles.darkScreen]}>
       <FlatList
         data={previewChats}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, dark && styles.darkList]}
         ListHeaderComponent={
           <View>
             <View style={styles.radaHeading}>
               <View>
-                <Text style={styles.sectionTitle}>Private Rada</Text>
-                <Text style={styles.sectionNote}>Only saved contacts · 24 hours</Text>
+              <Text style={[styles.sectionTitle, dark && styles.darkPrimaryText]}>Private Rada</Text>
+              <Text style={[styles.sectionNote, dark && styles.darkSecondaryText]}>Only saved contacts · 24 hours</Text>
               </View>
               <View style={styles.addButtonWrap}>
                 <Pressable
@@ -148,13 +151,13 @@ export default function ChatsScreen() {
                 onPress={() => openRada(ownRada)}
                 style={styles.ownRadaInfo}
               >
-                <Text style={styles.ownRadaLabel}>Your latest Rada</Text>
-                <Text style={styles.expiryText}>
+                <Text style={[styles.ownRadaLabel, dark && styles.darkSecondaryText]}>Your latest Rada</Text>
+                <Text style={[styles.expiryText, dark && styles.darkMutedText]}>
                   Expires in {formatRemaining(ownRada.expiresAt)}
                 </Text>
               </Pressable>
             )}
-            <Text style={styles.eyebrow}>CHATS · SAVED CONTACTS</Text>
+            <Text style={[styles.eyebrow, dark && styles.darkEyebrow]}>CHATS · SAVED CONTACTS</Text>
             {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
             {store.storageError && (
               <Text accessibilityRole="alert" style={styles.error}>
@@ -172,7 +175,7 @@ export default function ChatsScreen() {
           const lastMessage =
             lastPrivateMessage?.[lastPrivateMessage.length - 1] ?? item.lastMessage;
           return (
-            <View style={styles.row}>
+            <View style={[styles.row, dark && styles.darkRow]}>
               {item.savedContact && rada ? (
                 <Pressable
                   accessibilityRole="button"
@@ -193,15 +196,15 @@ export default function ChatsScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Open chat with ${item.name}`}
-                style={styles.details}
+                style={[styles.details, dark && styles.darkDetails]}
                 onPress={() => router.push(`/chat/${item.id}`)}
               >
                 <View style={styles.nameLine}>
-                  <Text style={styles.name}>{item.name}</Text>
-                  <Text style={styles.time}>{item.time}</Text>
+                  <Text style={[styles.name, dark && styles.darkPrimaryText]}>{item.name}</Text>
+                  <Text style={[styles.time, dark && styles.darkMutedText]}>{item.time}</Text>
                 </View>
                 <View style={styles.messageLine}>
-                  <Text numberOfLines={1} style={styles.message}>
+                  <Text numberOfLines={1} style={[styles.message, dark && styles.darkSecondaryText]}>
                     {lastMessage}
                   </Text>
                   {item.unread > 0 && (
@@ -393,6 +396,14 @@ const styles = StyleSheet.create({
     maxWidth: 760,
     width: "100%",
   },
+  darkScreen: { backgroundColor: "#15121C" },
+  darkList: { backgroundColor: "#15121C" },
+  darkPrimaryText: { color: "#F4F1F8" },
+  darkSecondaryText: { color: "#C2BDCA" },
+  darkMutedText: { color: "#9692A0" },
+  darkEyebrow: { backgroundColor: "#302C38", color: "#C8BFFF" },
+  darkRow: { backgroundColor: "#15121C" },
+  darkDetails: { borderBottomColor: "#393442" },
   list: { paddingHorizontal: 18, paddingBottom: 24 },
   radaHeading: {
     alignItems: "center",

@@ -77,6 +77,14 @@ export default function ProfileHub() {
   const dark = settings.theme === "dark";
   const [page, setPage] = useState<SettingsPage>("home");
   const [profile, setProfile] = useState<ProfileData>(initialProfile);
+  const [accountBaseline, setAccountBaseline] = useState({
+    username: "",
+    email: "",
+    phone: "",
+  });
+  const [passwordFieldsVisible, setPasswordFieldsVisible] = useState(false);
+  const [newPassword, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [blockedUsers, setBlockedUsers] = useState<Contact[]>([]);
@@ -136,7 +144,7 @@ export default function ProfileHub() {
 
       const publicProfile = publicResult.data;
       const privateProfile = privateResult.data;
-      setProfile({
+      const loadedProfile = {
         fullName: publicProfile?.full_name ?? String(currentUser.user_metadata.full_name ?? ""),
         username:
           publicProfile?.username ?? String(currentUser.user_metadata.username ?? ""),
@@ -149,6 +157,12 @@ export default function ProfileHub() {
         bio: publicProfile?.bio ?? "",
         about: publicProfile?.about ?? "",
         picturePath: publicProfile?.profile_picture_path ?? null,
+      };
+      setProfile(loadedProfile);
+      setAccountBaseline({
+        username: loadedProfile.username,
+        email: loadedProfile.email,
+        phone: loadedProfile.phone,
       });
       setContacts(
         (contactNames.data ?? []).map((item) => ({
@@ -254,6 +268,11 @@ export default function ProfileHub() {
         .eq("user_id", user.id);
       if (privateError) throw privateError;
       setProfile((current) => ({ ...current, username }));
+      setAccountBaseline({
+        username,
+        email: profile.email.trim().toLowerCase(),
+        phone: profile.phone.trim(),
+      });
       setNotice("Your profile details are saved.");
     } catch (reason) {
       reportError(reason, "Could not save your profile");
@@ -492,7 +511,7 @@ export default function ProfileHub() {
   async function saveAccountChanges() {
     if (!user || !supabase) return;
     const email = profile.email.trim().toLowerCase();
-    const emailChanged = email !== (user.email ?? "");
+    const emailChanged = email !== accountBaseline.email;
     const username = profile.username.trim().toLowerCase();
     const phone = profile.phone.trim();
     if (!email) {
@@ -537,8 +556,10 @@ export default function ProfileHub() {
         .eq("user_id", user.id);
       if (phoneError) throw phoneError;
       setProfile((current) => ({ ...current, username }));
+      setAccountBaseline({ username, email, phone });
       setPassword("");
       setPasswordConfirmation("");
+      setPasswordFieldsVisible(false);
       setNotice(
         emailChanged
           ? "Account updated. Check your email to confirm the new address."
@@ -550,9 +571,6 @@ export default function ProfileHub() {
       setSaving(false);
     }
   }
-
-  const [newPassword, setPassword] = useState("");
-  const [passwordConfirmation, setPasswordConfirmation] = useState("");
 
   async function enableBiometricLock() {
     if (Platform.OS === "web") {
@@ -614,10 +632,15 @@ export default function ProfileHub() {
   }
 
   if (!user || !supabase) return null;
+  const accountChangesPending =
+    profile.username.trim().toLowerCase() !== accountBaseline.username.trim().toLowerCase() ||
+    profile.email.trim().toLowerCase() !== accountBaseline.email.trim().toLowerCase() ||
+    profile.phone.trim() !== accountBaseline.phone.trim() ||
+    Boolean(newPassword || passwordConfirmation);
 
   return (
     <KeyboardAvoidingView
-      style={styles.screen}
+      style={[styles.screen, dark && styles.darkScreen]}
       behavior={Platform.OS === "ios" && page !== "home" ? "padding" : undefined}
     >
       {page !== "home" && (
@@ -630,12 +653,12 @@ export default function ProfileHub() {
           >
             <Ionicons name="arrow-back" size={22} color="#5B43C2" />
           </Pressable>
-          <Text style={styles.topTitle}>{pageTitles[page]}</Text>
+          <Text style={[styles.topTitle, dark && styles.darkPrimaryText]}>{pageTitles[page]}</Text>
           <View style={styles.topSpacer} />
         </View>
       )}
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, dark && styles.darkScreen]}
         keyboardShouldPersistTaps="handled"
       >
         {page === "home" ? (
@@ -681,7 +704,7 @@ export default function ProfileHub() {
             {error && <Message kind="error" text={error} />}
             {notice && <Message kind="notice" text={notice} />}
             {loading && <ActivityIndicator color="#6C4CF1" style={styles.loading} />}
-            <View style={styles.menu}>
+            <View style={[styles.menu, dark && styles.darkCard]}>
               <SettingsRow icon="person-outline" title="Account settings" subtitle="Username, email, password and account" onPress={() => setPage("account")} />
               <SettingsRow icon="lock-closed-outline" title="Privacy settings" subtitle="Profile photo, Rada, links, groups and blocked accounts" onPress={() => setPage("privacy")} />
               <SettingsRow icon="chatbubble-ellipses-outline" title="Chats" subtitle="Message input, font size and chat options" onPress={() => setPage("chats")} />
@@ -753,9 +776,38 @@ export default function ProfileHub() {
               <Field label="Username" value={profile.username} onChangeText={(value) => updateProfile("username", value)} autoCapitalize="none" />
               <Field label="Email address" value={profile.email} onChangeText={(value) => updateProfile("email", value)} keyboardType="email-address" />
               <Field label="Phone number" value={profile.phone} onChangeText={(value) => updateProfile("phone", value)} keyboardType="phone-pad" />
-              <Field label="New password" value={newPassword} onChangeText={setPassword} secureTextEntry placeholder="Leave blank to keep current password" />
-              <Field label="Confirm new password" value={passwordConfirmation} onChangeText={setPasswordConfirmation} secureTextEntry />
-              <ActionButton title={saving ? "Updating…" : "Save account changes"} onPress={() => void saveAccountChanges()} disabled={saving} />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={passwordFieldsVisible ? "Cancel password change" : "Change password"}
+                onPress={() => {
+                  setPasswordFieldsVisible((visible) => !visible);
+                  setPassword("");
+                  setPasswordConfirmation("");
+                }}
+                style={styles.passwordToggle}
+              >
+                <Text style={styles.linkText}>
+                  {passwordFieldsVisible ? "Cancel password change" : "Change password"}
+                </Text>
+                <Ionicons
+                  name={passwordFieldsVisible ? "chevron-up" : "chevron-down"}
+                  size={16}
+                  color="#5B43C2"
+                />
+              </Pressable>
+              {passwordFieldsVisible && (
+                <>
+                  <Field label="New password" value={newPassword} onChangeText={setPassword} secureTextEntry />
+                  <Field label="Confirm new password" value={passwordConfirmation} onChangeText={setPasswordConfirmation} secureTextEntry />
+                </>
+              )}
+              {accountChangesPending && (
+                <ActionButton
+                  title={saving ? "Updating…" : "Save account changes"}
+                  onPress={() => void saveAccountChanges()}
+                  disabled={saving}
+                />
+              )}
             </Card>
             <Card title="Accounts">
               <Text style={styles.hint}>Sign out to sign in or create another account. Only one account is active at a time on this device.</Text>
@@ -980,9 +1032,11 @@ export default function ProfileHub() {
 }
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  const { settings } = useAppSettings();
+  const dark = settings.theme === "dark";
   return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>{title}</Text>
+    <View style={[styles.card, dark && styles.darkCard]}>
+      <Text style={[styles.cardTitle, dark && styles.darkPrimaryText]}>{title}</Text>
       {children}
     </View>
   );
@@ -1005,9 +1059,11 @@ function Field({
   multiline?: boolean;
   maxLength?: number;
 }) {
+  const { settings } = useAppSettings();
+  const dark = settings.theme === "dark";
   return (
     <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, dark && styles.darkSecondaryText]}>{label}</Text>
       <TextInput
         {...props}
         autoCapitalize={props.autoCapitalize ?? "none"}
@@ -1016,7 +1072,7 @@ function Field({
         onChangeText={onChangeText}
         placeholderTextColor="#A6A1B0"
         value={value}
-        style={[styles.input, props.multiline && styles.multiline]}
+        style={[styles.input, dark && styles.darkInput, props.multiline && styles.multiline]}
       />
     </View>
   );
@@ -1033,6 +1089,8 @@ function ActionButton({
   disabled?: boolean;
   variant?: "primary" | "secondary" | "danger";
 }) {
+  const { settings } = useAppSettings();
+  const dark = settings.theme === "dark";
   return (
     <Pressable
       accessibilityRole="button"
@@ -1041,6 +1099,7 @@ function ActionButton({
       style={[
         styles.actionButton,
         variant === "secondary" && styles.secondaryButton,
+        dark && variant === "secondary" && styles.darkSecondaryButton,
         variant === "danger" && styles.dangerButton,
         disabled && styles.disabled,
       ]}
@@ -1049,6 +1108,7 @@ function ActionButton({
         style={[
           styles.actionButtonText,
           variant === "secondary" && styles.secondaryButtonText,
+          dark && variant === "secondary" && styles.darkSecondaryButtonText,
         ]}
       >
         {title}
@@ -1070,18 +1130,20 @@ function SettingsRow({
   onPress: () => void;
   last?: boolean;
 }) {
+  const { settings } = useAppSettings();
+  const dark = settings.theme === "dark";
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={[styles.settingsRow, last && styles.lastRow]}
+      style={[styles.settingsRow, dark && styles.darkSettingsRow, last && styles.lastRow]}
     >
-      <View style={styles.rowIcon}>
+      <View style={[styles.rowIcon, dark && styles.darkRowIcon]}>
         <Ionicons name={icon} size={20} color="#5B43C2" />
       </View>
       <View style={styles.rowBody}>
-        <Text style={styles.rowTitle}>{title}</Text>
-        <Text style={styles.rowSubtitle}>{subtitle}</Text>
+        <Text style={[styles.rowTitle, dark && styles.darkPrimaryText]}>{title}</Text>
+        <Text style={[styles.rowSubtitle, dark && styles.darkSecondaryText]}>{subtitle}</Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color="#9692A0" />
     </Pressable>
@@ -1101,9 +1163,11 @@ function SettingSwitch({
   disabled?: boolean;
   last?: boolean;
 }) {
+  const { settings } = useAppSettings();
+  const dark = settings.theme === "dark";
   return (
     <View style={[styles.switchRow, last && styles.lastRow, disabled && styles.dimmed]}>
-      <Text style={styles.switchTitle}>{title}</Text>
+      <Text style={[styles.switchTitle, dark && styles.darkSecondaryText]}>{title}</Text>
       <Switch
         accessibilityLabel={title}
         value={value}
@@ -1127,6 +1191,8 @@ function ChoiceGroup({
   onChange: (value: string) => void;
   disabled?: boolean;
 }) {
+  const { settings } = useAppSettings();
+  const dark = settings.theme === "dark";
   return (
     <View style={styles.choices}>
       {options.map((option) => (
@@ -1138,11 +1204,12 @@ function ChoiceGroup({
           onPress={() => onChange(option.value)}
           style={[
             styles.choice,
+            dark && styles.darkChoice,
             value === option.value && styles.selectedChoice,
             disabled && styles.dimmed,
           ]}
         >
-          <Text style={[styles.choiceText, value === option.value && styles.selectedChoiceText]}>
+          <Text style={[styles.choiceText, dark && styles.darkSecondaryText, value === option.value && styles.selectedChoiceText]}>
             {option.label}
           </Text>
         </Pressable>
@@ -1158,6 +1225,8 @@ function ColorChoices({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const { settings } = useAppSettings();
+  const dark = settings.theme === "dark";
   return (
     <View style={styles.colorChoices}>
       {bubbleColors.map((color) => (
@@ -1193,6 +1262,8 @@ function Composer({
   onSubmit: () => void;
   disabled: boolean;
 }) {
+  const { settings } = useAppSettings();
+  const dark = settings.theme === "dark";
   return (
     <View style={styles.composer}>
       <TextInput
@@ -1203,7 +1274,7 @@ function Composer({
         placeholder={placeholder}
         placeholderTextColor="#A6A1B0"
         value={value}
-        style={[styles.input, styles.composerInput]}
+        style={[styles.input, styles.composerInput, dark && styles.darkInput]}
       />
       <ActionButton title={buttonTitle} onPress={onSubmit} disabled={disabled || !value.trim()} />
     </View>
@@ -1211,10 +1282,12 @@ function Composer({
 }
 
 function UnavailableRow({ title, last }: { title: string; last?: boolean }) {
+  const { settings } = useAppSettings();
+  const dark = settings.theme === "dark";
   return (
-    <View style={[styles.unavailableRow, last && styles.lastRow]}>
-      <Text style={styles.unavailableTitle}>{title}</Text>
-      <Text style={styles.unavailableValue}>Unavailable in preview</Text>
+    <View style={[styles.unavailableRow, dark && styles.darkSettingsRow, last && styles.lastRow]}>
+      <Text style={[styles.unavailableTitle, dark && styles.darkPrimaryText]}>{title}</Text>
+      <Text style={[styles.unavailableValue, dark && styles.darkSecondaryText]}>Unavailable in preview</Text>
     </View>
   );
 }
@@ -1242,6 +1315,13 @@ const styles = StyleSheet.create({
   darkIdentity: { backgroundColor: "#211E29", borderColor: "#393442", borderRadius: 16, borderWidth: 1, marginBottom: 12 },
   darkPrimaryText: { color: "#F4F1F8" },
   darkSecondaryText: { color: "#C2BDCA" },
+  darkInput: { backgroundColor: "#302C38", borderColor: "#494453", color: "#F4F1F8" },
+  darkSettingsRow: { borderBottomColor: "#393442" },
+  darkRowIcon: { backgroundColor: "#302C38" },
+  darkChoice: { backgroundColor: "#302C38", borderColor: "#494453" },
+  darkSecondaryButton: { backgroundColor: "#302C38" },
+  darkSecondaryButtonText: { color: "#D4CCFF" },
+  passwordToggle: { alignItems: "center", flexDirection: "row", gap: 5, justifyContent: "center", paddingVertical: 8 },
   content: { alignSelf: "center", maxWidth: 720, padding: 18, paddingBottom: 36, width: "100%" },
   topBar: { alignItems: "center", backgroundColor: "#FFFFFF", borderBottomColor: "#EEEAF5", borderBottomWidth: 1, flexDirection: "row", minHeight: 52, paddingHorizontal: 12 },
   backButton: { alignItems: "center", height: 42, justifyContent: "center", width: 42 },

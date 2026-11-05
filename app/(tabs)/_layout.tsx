@@ -35,6 +35,7 @@ export default function TabLayout() {
         headerShown: true,
         headerTitleStyle: { color: dark ? "#F4F1F8" : "#211D2B", fontSize: 17, fontWeight: "800" },
         headerStyle: { backgroundColor: dark ? "#15121C" : "#FAF9FF" },
+        sceneStyle: { backgroundColor: dark ? "#15121C" : "#FAF9FF" },
         headerShadowVisible: false,
         headerRight: () => <ProfileButton />,
         tabBarPosition: "bottom",

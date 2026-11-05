@@ -10,6 +10,8 @@ import { useAppSettings } from "@/lib/app-settings";
 
 function RootNavigator() {
   const { session, ready, error } = useAuth();
+  const { settings } = useAppSettings();
+  const dark = settings.theme === "dark";
 
   if (!ready) {
     return (
@@ -22,7 +24,15 @@ function RootNavigator() {
 
   return (
     <AppLockGate>
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: dark ? "#15121C" : "#FAF9FF" },
+          headerStyle: { backgroundColor: dark ? "#15121C" : "#FAF9FF" },
+          headerTintColor: dark ? "#F4F1F8" : "#211D2B",
+          headerTitleStyle: { color: dark ? "#F4F1F8" : "#211D2B" },
+        }}
+      >
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="chat/[id]"
