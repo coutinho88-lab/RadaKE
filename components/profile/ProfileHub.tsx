@@ -927,7 +927,7 @@ export default function ProfileHub() {
             <Card title="Received message color">
               <ColorChoices value={settings.receivedBubbleColor} onChange={(value) => updateLocalSetting("receivedBubbleColor", value)} />
             </Card>
-            <Text style={styles.hint}>Theme and chat colors are stored on this device. App theme applies to the profile and chat screens.</Text>
+            <Text style={styles.hint}>Theme and chat colors are stored on this device. App theme applies across the app, including chats.</Text>
           </>
         )}
 
