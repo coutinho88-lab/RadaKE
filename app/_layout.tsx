@@ -2,8 +2,11 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import AuthScreen from "@/components/auth/AuthScreen";
+import AppLockGate from "@/components/security/AppLockGate";
+import { AppSettingsProvider } from "@/lib/app-settings";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { PreviewStoreProvider } from "@/lib/preview-store";
+import { useAppSettings } from "@/lib/app-settings";
 
 function RootNavigator() {
   const { session, ready, error } = useAuth();
@@ -18,18 +21,25 @@ function RootNavigator() {
   if (!session) return <AuthScreen authError={error} />;
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen
-        name="chat/[id]"
-        options={{ headerShown: true, title: "Conversation" }}
-      />
-      <Stack.Screen
-        name="profile"
-        options={{ headerShown: true, title: "Profile" }}
-      />
-    </Stack>
+    <AppLockGate>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="chat/[id]"
+          options={{ headerShown: true, title: "Conversation" }}
+        />
+        <Stack.Screen
+          name="profile"
+          options={{ headerShown: true, title: "Profile" }}
+        />
+      </Stack>
+    </AppLockGate>
   );
+}
+
+function ThemedStatusBar() {
+  const { settings } = useAppSettings();
+  return <StatusBar style={settings.theme === "dark" ? "light" : "dark"} />;
 }
 
 const styles = StyleSheet.create({
@@ -44,10 +54,12 @@ const styles = StyleSheet.create({
 export default function RootLayout() {
   return (
     <PreviewStoreProvider>
-      <AuthProvider>
-        <StatusBar style="dark" />
-        <RootNavigator />
-      </AuthProvider>
+      <AppSettingsProvider>
+        <AuthProvider>
+          <ThemedStatusBar />
+          <RootNavigator />
+        </AuthProvider>
+      </AppSettingsProvider>
     </PreviewStoreProvider>
   );
 }

@@ -56,13 +56,16 @@ lib/
 ## Backend implementation path
 
 1. Enable email/password sign-in in Supabase Authentication and choose whether email confirmation is required.
-2. Apply [`supabase/migrations/20261104000000_auth_profiles.sql`](./supabase/migrations/20261104000000_auth_profiles.sql) in the Supabase SQL Editor (or with the Supabase CLI). It creates public and private profile tables, saved contacts, signup profile creation, and row-level security policies.
+2. Apply the migrations in `supabase/migrations` in timestamp order. The first creates public and private profiles and saved contacts. The second adds profile photos, privacy preferences, blocking, and access policies.
 3. Keep the Supabase URL and anon key in `.env` as described above. The app requires these values and the migration before accounts can be created.
-4. Public usernames, email addresses, bios, and about text are readable by anyone. Phone numbers, dates of birth, and sex are readable only by the profile owner and accounts the owner has saved as contacts. The profile screen manages these fields and saved contacts. Passwords are handled only by Supabase Auth and are never stored in profile rows.
+4. Public usernames, email addresses, names, bios, and about text are readable by signed-in users. Phone numbers, dates of birth, and sex are readable only by the profile owner and accounts the owner has saved as contacts. Profile photos are stored in a private bucket with viewer policies. Passwords are handled only by Supabase Auth and are never stored in profile rows.
 5. Supabase Auth may require users to confirm their email before their first sign-in. Email changes may also require confirmation, depending on the project’s Authentication settings.
 6. Add Postgres tables for `conversations`, `conversation_members`, `messages`, `posts`, `post_likes`, `comments`, `follows`, and `stories`. Enable RLS on every table; allow reads/writes only for authenticated members/followers as appropriate.
 7. Subscribe to authorized conversation/message changes through Supabase Realtime. Store read receipts and typing state separately; do not treat client-side ticks or presence as authoritative.
 8. Store media in private Supabase Storage buckets with policies and signed URLs. Use an Edge Function plus APNs/FCM credentials for push delivery.
 9. For true end-to-end encryption, design and audit a dedicated cryptographic protocol. Supabase transport security and database RLS are not end-to-end encryption.
+10. Deploy `supabase/functions/delete-account` to Supabase before enabling account deletion. The function uses the server-only `SUPABASE_SERVICE_ROLE_KEY`; never expose that key to the app.
+
+The profile settings hub stores appearance and chat preferences on the device. Rada, messaging, chat backup/transfer, media-gallery downloads, and push notification delivery are still preview features; their controls are labeled as preferences or unavailable until those services are implemented. Biometric app lock requires a native iOS/Android build and a device with biometrics/passcode configured; PIN and pattern locks are not implemented.
 
 Do not ship push provider secrets or Supabase service-role credentials in the client. Configure production redirect URLs, RLS policies, storage policies, and platform notification credentials before release.

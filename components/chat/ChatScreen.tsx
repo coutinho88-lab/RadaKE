@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { previewChats, previewMessages } from "@/lib/preview-data";
+import { useAppSettings } from "@/lib/app-settings";
 import { usePreviewStore } from "@/lib/preview-store";
 
 type Props = { conversationId: string };
@@ -17,6 +18,9 @@ type Props = { conversationId: string };
 export default function ChatScreen({ conversationId }: Props) {
   const chat = previewChats.find((item) => item.id === conversationId);
   const { privateMessages } = usePreviewStore();
+  const { settings } = useAppSettings();
+  const dark = settings.theme === "dark";
+  const fontSize = settings.chatFontSize === "small" ? 12 : settings.chatFontSize === "large" ? 17 : 14;
   const [draft, setDraft] = useState("");
   const [sentMessages, setSentMessages] = useState<string[]>([]);
   const messages = useMemo(
@@ -38,26 +42,26 @@ export default function ChatScreen({ conversationId }: Props) {
   if (!chat) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>Conversation not found.</Text>
+        <Text style={[styles.emptyText, dark && styles.darkText]}>Conversation not found.</Text>
       </View>
     );
   }
 
   return (
     <KeyboardAvoidingView
-      style={styles.screen}
+      style={[styles.screen, dark && styles.darkScreen]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0}
     >
-      <View style={styles.previewNotice}>
+      <View style={[styles.previewNotice, dark && styles.darkNotice]}>
         <Text style={styles.previewText}>PREVIEW · Messages stay on this device</Text>
       </View>
-      <View style={styles.chatHeader}>
+      <View style={[styles.chatHeader, dark && styles.darkHeader]}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{chat.name.slice(0, 1)}</Text>
         </View>
         <View>
-          <Text style={styles.chatName}>{chat.name}</Text>
+          <Text style={[styles.chatName, dark && styles.darkText]}>{chat.name}</Text>
           <Text style={styles.presence}>last seen recently</Text>
         </View>
       </View>
@@ -71,31 +75,45 @@ export default function ChatScreen({ conversationId }: Props) {
             (previewMessages[conversationId]?.length ?? 0) +
               (privateMessages[conversationId]?.length ?? 0);
           return (
-            <View style={[styles.bubble, own ? styles.ownBubble : styles.theirBubble]}>
-              <Text style={[styles.bubbleText, own && styles.ownText]}>{item}</Text>
+            <View
+              style={[
+                styles.bubble,
+                own ? styles.ownBubble : styles.theirBubble,
+                {
+                  backgroundColor: own
+                    ? settings.sentBubbleColor
+                    : dark && settings.receivedBubbleColor === "#FFFFFF"
+                      ? "#302C38"
+                      : settings.receivedBubbleColor,
+                },
+              ]}
+            >
+              <Text style={[styles.bubbleText, { fontSize }, own && styles.ownText, !own && dark && styles.darkText]}>{item}</Text>
               {own && <Text style={styles.receipt}>✓✓</Text>}
             </View>
           );
         }}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>Say hello to start the conversation.</Text>
+          <Text style={[styles.emptyText, dark && styles.darkText]}>Say hello to start the conversation.</Text>
         }
       />
-      <View style={styles.composer}>
+      <View style={[styles.composer, dark && styles.darkHeader]}>
         <TextInput
           accessibilityLabel="Message"
           value={draft}
           onChangeText={setDraft}
-          onSubmitEditing={sendMessage}
+          onSubmitEditing={() => {
+            if (settings.enterToSend) sendMessage();
+          }}
           placeholder="Write a message…"
-          returnKeyType="send"
-          style={styles.input}
+          returnKeyType={settings.enterToSend ? "send" : "default"}
+          style={[styles.input, dark && styles.darkInput, { fontSize }]}
         />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Send message"
           onPress={sendMessage}
-          style={styles.sendButton}
+          style={[styles.sendButton, { backgroundColor: settings.sentBubbleColor }]}
         >
           <Text style={styles.sendText}>Send</Text>
         </Pressable>
@@ -112,6 +130,11 @@ const styles = StyleSheet.create({
     maxWidth: 820,
     width: "100%",
   },
+  darkScreen: { backgroundColor: "#15121C" },
+  darkNotice: { backgroundColor: "#2A2632" },
+  darkHeader: { backgroundColor: "#211E29", borderBottomColor: "#393442" },
+  darkText: { color: "#F4F1F8" },
+  darkInput: { backgroundColor: "#302C38", color: "#F4F1F8" },
   previewNotice: { alignItems: "center", backgroundColor: "#F0EDFA", paddingVertical: 7 },
   previewText: { color: "#777386", fontSize: 10, fontWeight: "700", letterSpacing: 0.5 },
   chatHeader: {
@@ -130,8 +153,8 @@ const styles = StyleSheet.create({
   presence: { color: "#9692A0", fontSize: 11, marginTop: 2 },
   timeline: { flexGrow: 1, justifyContent: "flex-end", padding: 16 },
   bubble: { borderRadius: 18, marginBottom: 9, maxWidth: "82%", paddingHorizontal: 13, paddingTop: 10, paddingBottom: 7 },
-  ownBubble: { alignSelf: "flex-end", backgroundColor: "#6C4CF1", borderBottomRightRadius: 5 },
-  theirBubble: { alignSelf: "flex-start", backgroundColor: "#FFFFFF", borderBottomLeftRadius: 5 },
+  ownBubble: { alignSelf: "flex-end", borderBottomRightRadius: 5 },
+  theirBubble: { alignSelf: "flex-start", borderBottomLeftRadius: 5 },
   bubbleText: { color: "#302C38", fontSize: 14, lineHeight: 20 },
   ownText: { color: "#FFFFFF" },
   receipt: { alignSelf: "flex-end", color: "#BDEBFF", fontSize: 10, marginTop: 2 },

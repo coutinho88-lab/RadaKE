@@ -20,6 +20,7 @@ export default function AuthScreen({
   authError: string | null;
 }) {
   const [mode, setMode] = useState<AuthMode>("sign-in");
+  const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -55,6 +56,10 @@ export default function AuthScreen({
 
     if (mode === "sign-up") {
       const normalizedUsername = username.trim().toLowerCase();
+      if (!fullName.trim()) {
+        setError("Enter your name.");
+        return;
+      }
       if (!/^[a-z0-9_]{3,30}$/.test(normalizedUsername)) {
         setError("Username must be 3–30 characters: letters, numbers, or underscores.");
         return;
@@ -77,6 +82,7 @@ export default function AuthScreen({
           password,
           options: {
             data: {
+              full_name: fullName.trim(),
               username: username.trim().toLowerCase(),
               phone_number: phone.trim(),
             },
@@ -138,6 +144,14 @@ export default function AuthScreen({
 
         {signingUp && (
           <>
+            <Field
+              label="Full name"
+              value={fullName}
+              onChangeText={setFullName}
+              autoCapitalize="words"
+              placeholder="Your name"
+              textContentType="name"
+            />
             <Field
               label="Username"
               value={username}
@@ -231,7 +245,7 @@ type FieldProps = {
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
   keyboardType?: "default" | "email-address" | "phone-pad";
   secureTextEntry?: boolean;
-  textContentType?: "username" | "telephoneNumber" | "emailAddress" | "newPassword" | "password";
+  textContentType?: "name" | "username" | "telephoneNumber" | "emailAddress" | "newPassword" | "password";
 };
 
 function Field({ label, ...inputProps }: FieldProps) {

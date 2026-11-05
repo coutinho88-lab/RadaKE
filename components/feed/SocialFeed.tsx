@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { usePreviewStore } from "@/lib/preview-store";
+import { useAppSettings } from "@/lib/app-settings";
 import { useState } from "react";
 import {
   FlatList,
@@ -30,6 +31,8 @@ type Quote = { id: string; post: Post; text: string };
 
 export default function SocialFeed() {
   const store = usePreviewStore();
+  const { settings } = useAppSettings();
+  const dark = settings.theme === "dark";
   const [likedPosts, setLikedPosts] = useState<string[]>([]);
   const [repostedPosts, setRepostedPosts] = useState<string[]>([]);
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -137,9 +140,9 @@ export default function SocialFeed() {
   }
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.createPost}>
-        <Text style={styles.createTitle}>Share a public post</Text>
+    <View style={[styles.screen, dark && styles.darkScreen]}>
+      <View style={[styles.createPost, dark && styles.darkCard]}>
+        <Text style={[styles.createTitle, dark && styles.darkPrimaryText]}>Share a public post</Text>
         <TextInput
           accessibilityLabel="Write a public post"
           value={postCaption}
@@ -147,7 +150,7 @@ export default function SocialFeed() {
           maxLength={500}
           multiline
           placeholder="What would you like to share?"
-          style={styles.createInput}
+          style={[styles.createInput, dark && styles.darkInput]}
         />
         {postImage && (
           <View style={styles.selectedImageWrap}>
@@ -196,7 +199,7 @@ export default function SocialFeed() {
           </Pressable>
         </View>
       </View>
-      <Text style={styles.preview}>PUBLIC FEED · VISIBLE TO EVERYONE</Text>
+      <Text style={[styles.preview, dark && styles.darkSecondaryText]}>PUBLIC FEED · VISIBLE TO EVERYONE</Text>
       <FlatList
         data={posts}
         keyExtractor={(post) => post.id}
@@ -226,14 +229,14 @@ export default function SocialFeed() {
             (comments[item.id]?.length ?? 0) - initialComments,
           );
           return (
-            <View style={styles.post}>
+            <View style={[styles.post, dark && styles.darkCard]}>
               <View style={styles.postHeader}>
                 <View style={styles.postAvatar}>
                   <Text style={styles.avatarInitial}>{item.author.slice(0, 1)}</Text>
                 </View>
                 <View style={styles.authorInfo}>
-                  <Text style={styles.author}>{item.author}</Text>
-                  <Text style={styles.location}>{item.location}</Text>
+                  <Text style={[styles.author, dark && styles.darkPrimaryText]}>{item.author}</Text>
+                  <Text style={[styles.location, dark && styles.darkSecondaryText]}>{item.location}</Text>
                 </View>
                 <Ionicons name="ellipsis-horizontal" size={20} color="#514D5B" />
               </View>
@@ -253,7 +256,7 @@ export default function SocialFeed() {
                 >
                   <Ionicons
                     name={liked ? "heart" : "heart-outline"}
-                    color={liked ? "#E34468" : "#211D2B"}
+                    color={liked ? "#E34468" : dark ? "#F4F1F8" : "#211D2B"}
                     size={25}
                   />
                 </Pressable>
@@ -263,7 +266,7 @@ export default function SocialFeed() {
                   onPress={() => setModal({ post: item, mode: "comments" })}
                   style={styles.actionButton}
                 >
-                  <Ionicons name="chatbubble-outline" color="#211D2B" size={23} />
+                  <Ionicons name="chatbubble-outline" color={dark ? "#F4F1F8" : "#211D2B"} size={23} />
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
@@ -273,22 +276,22 @@ export default function SocialFeed() {
                 >
                   <Ionicons
                     name="repeat-outline"
-                    color={reposted ? "#2583F7" : "#211D2B"}
+                    color={reposted ? "#2583F7" : dark ? "#F4F1F8" : "#211D2B"}
                     size={24}
                   />
                 </Pressable>
                 <Ionicons
                   name="bookmark-outline"
-                  color="#211D2B"
+                  color={dark ? "#F4F1F8" : "#211D2B"}
                   size={23}
                   style={styles.bookmark}
                 />
               </View>
-              <Text style={styles.likes}>
+              <Text style={[styles.likes, dark && styles.darkPrimaryText]}>
                 {item.likes + (liked ? 1 : 0)} likes
               </Text>
-              <Text style={styles.caption}>
-                <Text style={styles.author}>{item.author} </Text>
+              <Text style={[styles.caption, dark && styles.darkPrimaryText]}>
+                <Text style={[styles.author, dark && styles.darkPrimaryText]}>{item.author} </Text>
                 {item.caption}
               </Text>
               <Pressable
@@ -296,11 +299,11 @@ export default function SocialFeed() {
                 onPress={() => setModal({ post: item, mode: "comments" })}
                 style={styles.commentLink}
               >
-                <Text style={styles.comments}>
+                <Text style={[styles.comments, dark && styles.darkSecondaryText]}>
                   View all {item.comments + addedComments} comments
                 </Text>
               </Pressable>
-              <Text style={styles.repostCount}>
+              <Text style={[styles.repostCount, dark && styles.darkSecondaryText]}>
                 {item.reposts + (reposted ? 1 : 0)} reposts
               </Text>
             </View>
@@ -317,9 +320,9 @@ export default function SocialFeed() {
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={styles.modalBackdrop}
         >
-          <View style={styles.modalCard}>
+          <View style={[styles.modalCard, dark && styles.darkCard]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
+              <Text style={[styles.modalTitle, dark && styles.darkPrimaryText]}>
                 {modal?.mode === "comments"
                   ? "Comments"
                   : modal?.mode === "quote"
@@ -359,7 +362,7 @@ export default function SocialFeed() {
                     onSubmitEditing={addComment}
                     placeholder="Add a comment…"
                     returnKeyType="send"
-                    style={styles.input}
+                    style={[styles.input, dark && styles.darkInput]}
                   />
                   <Pressable
                     accessibilityRole="button"
@@ -411,7 +414,7 @@ export default function SocialFeed() {
                   value={quoteDraft}
                   onChangeText={setQuoteDraft}
                   placeholder="What do you think about this?"
-                  style={styles.quoteInput}
+                  style={[styles.quoteInput, dark && styles.darkInput]}
                 />
                 <View style={styles.quotedPost}>
                   <Text style={styles.author}>{modal.post.author}</Text>
@@ -442,6 +445,11 @@ const styles = StyleSheet.create({
     maxWidth: 620,
     width: "100%",
   },
+  darkScreen: { backgroundColor: "#15121C" },
+  darkCard: { backgroundColor: "#211E29", borderColor: "#393442" },
+  darkPrimaryText: { color: "#F4F1F8" },
+  darkSecondaryText: { color: "#C2BDCA" },
+  darkInput: { backgroundColor: "#302C38", borderColor: "#494453", color: "#F4F1F8" },
   createPost: {
     backgroundColor: "#FFFFFF",
     borderBottomColor: "#EEEAF5",

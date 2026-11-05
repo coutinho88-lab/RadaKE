@@ -9,10 +9,13 @@ import {
   View,
 } from "react-native";
 import { previewDiscoverItems } from "@/lib/preview-data";
+import { useAppSettings } from "@/lib/app-settings";
 
 const trendingSearches = ["Outdoors", "City after dark", "Local makers"];
 
 export default function DiscoverRoute() {
+  const { settings } = useAppSettings();
+  const dark = settings.theme === "dark";
   const [query, setQuery] = useState("");
   const results = useMemo(() => {
     const term = query.trim().toLocaleLowerCase();
@@ -26,12 +29,12 @@ export default function DiscoverRoute() {
 
   return (
     <ScrollView
-      style={styles.screen}
+      style={[styles.screen, dark && styles.darkScreen]}
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.preview}>DISCOVER · TRENDING & COMMUNITY NEWS</Text>
-      <View style={styles.searchBox}>
+      <Text style={[styles.preview, dark && styles.darkSecondaryText]}>DISCOVER · TRENDING & COMMUNITY NEWS</Text>
+      <View style={[styles.searchBox, dark && styles.darkCard]}>
         <Ionicons name="search" color="#777386" size={20} />
         <TextInput
           accessibilityLabel="Search Discover"
@@ -39,7 +42,7 @@ export default function DiscoverRoute() {
           onChangeText={setQuery}
           placeholder="Search posts, topics, and news"
           returnKeyType="search"
-          style={styles.searchInput}
+          style={[styles.searchInput, dark && styles.darkPrimaryText]}
         />
         {query.length > 0 && (
           <Pressable
@@ -52,7 +55,7 @@ export default function DiscoverRoute() {
           </Pressable>
         )}
       </View>
-      <Text style={styles.sectionTitle}>Popular searches</Text>
+      <Text style={[styles.sectionTitle, dark && styles.darkPrimaryText]}>Popular searches</Text>
       <View style={styles.trends}>
         {trendingSearches.map((trend) => (
           <Pressable
@@ -62,12 +65,12 @@ export default function DiscoverRoute() {
             style={styles.trendChip}
           >
             <Ionicons name="trending-up" color="#5B43C2" size={15} />
-            <Text style={styles.trendText}>{trend}</Text>
+            <Text style={[styles.trendText, dark && styles.darkPrimaryText]}>{trend}</Text>
           </Pressable>
         ))}
       </View>
       <View style={styles.resultsHeading}>
-        <Text style={styles.sectionTitle}>
+        <Text style={[styles.sectionTitle, dark && styles.darkPrimaryText]}>
           {query ? "Search results" : "Trending & news"}
         </Text>
         <Text style={styles.resultCount}>{results.length}</Text>
@@ -75,14 +78,14 @@ export default function DiscoverRoute() {
       {results.length === 0 ? (
         <View style={styles.empty}>
           <Ionicons name="search-outline" size={28} color="#9692A0" />
-          <Text style={styles.emptyTitle}>No matches yet</Text>
-          <Text style={styles.emptyText}>
+          <Text style={[styles.emptyTitle, dark && styles.darkPrimaryText]}>No matches yet</Text>
+          <Text style={[styles.emptyText, dark && styles.darkSecondaryText]}>
             Try another keyword to search the preview directory.
           </Text>
         </View>
       ) : (
         results.map((item, index) => (
-          <View key={item.id} style={styles.resultCard}>
+          <View key={item.id} style={[styles.resultCard, dark && styles.darkCard]}>
             <View
               style={[
                 styles.resultIcon,
@@ -97,8 +100,8 @@ export default function DiscoverRoute() {
             </View>
             <View style={styles.resultDetails}>
               <Text style={styles.category}>{item.category} · #{index + 1}</Text>
-              <Text style={styles.resultTitle}>{item.title}</Text>
-              <Text style={styles.description}>{item.description}</Text>
+              <Text style={[styles.resultTitle, dark && styles.darkPrimaryText]}>{item.title}</Text>
+              <Text style={[styles.description, dark && styles.darkSecondaryText]}>{item.description}</Text>
               <Text style={styles.source}>{item.source}</Text>
             </View>
             <Ionicons name="chevron-forward" color="#9692A0" size={18} />
@@ -114,6 +117,10 @@ export default function DiscoverRoute() {
 
 const styles = StyleSheet.create({
   screen: { backgroundColor: "#FAF9FF", flex: 1 },
+  darkScreen: { backgroundColor: "#15121C" },
+  darkCard: { backgroundColor: "#211E29", borderColor: "#393442" },
+  darkPrimaryText: { color: "#F4F1F8" },
+  darkSecondaryText: { color: "#C2BDCA" },
   content: {
     alignSelf: "center",
     maxWidth: 760,

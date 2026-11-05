@@ -23,6 +23,12 @@
         {
           "defaultChannel": "messages"
         }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "InstaChat uses Face ID to unlock your account."
+        }
       ]
     ],
     "experiments": {

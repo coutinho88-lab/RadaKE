@@ -2,6 +2,7 @@ import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet } from "react-native";
+import { useAppSettings } from "@/lib/app-settings";
 
 const tabIcons = {
   index: "chatbubbles-outline",
@@ -25,18 +26,21 @@ function ProfileButton() {
 }
 
 export default function TabLayout() {
+  const { settings } = useAppSettings();
+  const dark = settings.theme === "dark";
+
   return (
     <Tabs
       screenOptions={({ route }) => ({
         headerShown: true,
-        headerTitleStyle: { color: "#211D2B", fontSize: 17, fontWeight: "800" },
-        headerStyle: { backgroundColor: "#FAF9FF" },
+        headerTitleStyle: { color: dark ? "#F4F1F8" : "#211D2B", fontSize: 17, fontWeight: "800" },
+        headerStyle: { backgroundColor: dark ? "#15121C" : "#FAF9FF" },
         headerShadowVisible: false,
         headerRight: () => <ProfileButton />,
         tabBarPosition: "bottom",
         tabBarActiveTintColor: "#6C4CF1",
         tabBarInactiveTintColor: "#8B8B98",
-        tabBarStyle: { height: 76, paddingTop: 8, paddingBottom: 16 },
+        tabBarStyle: { backgroundColor: dark ? "#211E29" : "#FFFFFF", borderTopColor: dark ? "#393442" : "#EEEAF5", height: 76, paddingTop: 8, paddingBottom: 16 },
         tabBarLabelStyle: { fontSize: 11 },
         tabBarIcon: ({ color, size }) => (
           <Ionicons
